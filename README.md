@@ -23,6 +23,19 @@ This repository now includes a lightweight Python engine for accessing Sentinel-
 
 3. Open `artifacts/dnbr_overlay.html` in your browser to view the dNBR overlay on OpenStreetMap.
 
+### Visualize an existing NBR / dNBR array
+You only need two pieces of information to render an overlay:
+- A 2D NumPy array containing NBR or dNBR values (typically in the range [-1, 1]).
+- The bounding box for the array in WGS84 coordinates as `(min_lon, min_lat, max_lon, max_lat)`.
+
+The helper `dragonfly.viz.raster_overlay` handles normalization, colorizing with the USGS burn severity colormap, and creating a Folium map. For a quick, offline example that uses a synthetic dNBR array, run:
+
+```bash
+python examples/visualize_dnbr_overlay.py
+```
+
+The script saves `./artifacts/synthetic_dnbr_overlay.html`, which you can open in a browser to inspect the overlay.
+
 ## Key Modules
 - `dragonfly.data_access.SentinelStacConnector` – STAC search and band download
 - `dragonfly.processing.calculate_nbr` / `calculate_dnbr` – spectral indices
