@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragonfly System Architecture Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            background: white;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+        }
+        .diagram-container {
+            background: white;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        .mermaid {
+            text-align: center;
+        }
+        .info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3498db;
+        }
+        .header-info {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .header-info h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-info">
+        <h1 style="color: white; border: none;">Dragonfly NBR/dNBR Toolkit - System Architecture</h1>
+        <p><strong>Project:</strong> Sentinel-2 Fire Analysis Toolkit</p>
+        <p><strong>Purpose:</strong> Interactive architecture diagrams for the complete NBR/dNBR processing pipeline</p>
+    </div>
+
+    <div class="info">
+        <strong>📊 Interactive Diagrams:</strong> All diagrams below are rendered in real-time using Mermaid.js. 
+        You can zoom, pan, and export them as needed.
+    </div>
+
+    <h2>1. System Architecture Diagram</h2>
+    <div class="diagram-container">
+        <div class="mermaid">
+graph TB
+    subgraph "User Environment"
+        A[Jupyter Notebook / Python Script] 
+        B[Python Environment<br/>numpy, rasterio, folium, requests]
+    end
+    
+    subgraph "Data Access Layer"
+        C[STAC Connector]
+        D[Copernicus Data Space Catalogue]
+        E[Search & Filter Engine]
+    end
+    
+    subgraph "Copernicus Infrastructure"
+        F[Copernicus Data Space]
+        G[S3 Storage<br/>Sentinel-2 L2A]
+        H[Band Assets<br/>B08 NIR, B12 SWIR, SCL]
+    end
+    
+    subgraph "Processing Pipeline"
+        I[Cloud Masking SCL]
+        J[Band Download Manager]
+        K[Rasterio I/O]
+        L[NumPy Processing]
+        M[NBR Calculation]
+        N[dNBR Calculation]
+        O[Burn Severity Classification]
+    end
+    
+    subgraph "Visualization"
+        P[Folium Map Generator]
+        Q[OpenStreetMap Overlay]
+        R[Interactive HTML Output]
+    end
+    
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> J
+    J --> F
+    F --> G
+    G --> H
+    H --> K
+    K --> I
+    I --> L
+    L --> M
+    M --> N
+    N --> O
+    O --> P
+    P --> Q
+    Q --> R
+    R --> A
+    
+    style A fill:#e1f5ff
+    style M fill:#ffe1e1
+    style N fill:#ffe1e1
+    style O fill:#ffe1e1
+    style H fill:#e1ffe1
+        </div>
+    </div>
+
+    <h2>2. Data Flow Sequence Diagram</h2>
+    <div class="diagram-container">
+        <div class="mermaid">
+sequenceDiagram
+    participant User
+    participant Pipeline
+    participant STACConnector
+    participant CopernicusAPI
+    participant Storage
+    participant Processor
+    
+    User->>Pipeline: download_and_prepare(geometry, dates)
+    Pipeline->>STACConnector: search(AOI, time_windows, cloud_cover)
+    STACConnector->>CopernicusAPI: POST /stac/search
+    CopernicusAPI-->>STACConnector: Return STAC items
+    
+    Pipeline->>STACConnector: download_bands([B08, B12, SCL])
+    STACConnector->>Storage: GET asset HREFs
+    Storage-->>STACConnector: Stream GeoTIFF files
+    
+    Pipeline->>Processor: load_raster(band_paths)
+    Processor->>Processor: Scale reflectance (/10000)
+    Processor->>Processor: Resample 20m → 10m
+    
+    Pipeline->>Processor: build_cloud_mask(SCL)
+    Processor->>Processor: Mask clouds (classes 8,9,10,11)
+    
+    Pipeline->>Processor: calculate_nbr(NIR, SWIR)
+    Processor->>Processor: NBR = (NIR-SWIR)/(NIR+SWIR)
+    
+    Pipeline->>Processor: calculate_dnbr(NBR_pre, NBR_post)
+    Processor->>Processor: dNBR = NBR_pre - NBR_post
+    
+    Pipeline->>Processor: classify_dnbr(dNBR)
+    Processor-->>Pipeline: Return NBRRunResult
+    
+    Pipeline->>User: Return result with statistics
+        </div>
+    </div>
+
+    <h2>3. Component Interaction Diagram</h2>
+    <div class="diagram-container">
+        <div class="mermaid">
+graph LR
+    subgraph "Data Access"
+        A1[SentinelStacConnector]
+        A2[STAC Search API]
+        A3[Asset Downloader]
+    end
+    
+    subgraph "Processing Core"
+        B1[RasterProduct Loader]
+        B2[Resampling Engine]
+        B3[NBR Calculator]
+        B4[dNBR Calculator]
+        B5[Classifier]
+    end
+    
+    subgraph "Data Products"
+        C1[Pre-NBR]
+        C2[Post-NBR]
+        C3[dNBR Raster]
+        C4[Severity Map]
+    end
+    
+    subgraph "Visualization"
+        D1[Colormap Renderer]
+        D2[Folium Overlay]
+        D3[HTML Map Export]
+    end
+    
+    A1 --> A2
+    A2 --> A3
+    A3 --> B1
+    B1 --> B2
+    B2 --> B3
+    B3 --> C1
+    B3 --> C2
+    C1 --> B4
+    C2 --> B4
+    B4 --> C3
+    C3 --> B5
+    B5 --> C4
+    C4 --> D1
+    D1 --> D2
+    D2 --> D3
+    
+    style B3 fill:#ffcccc
+    style B4 fill:#ffcccc
+    style C3 fill:#ccffcc
+    style C4 fill:#ccffcc
+        </div>
+    </div>
+
+    <h2>4. NBR/dNBR Processing Pipeline</h2>
+    <div class="diagram-container">
+        <div class="mermaid">
+flowchart TD
+    A[Pre-Fire Sentinel-2 Scene] --> B[Download B08 NIR 10m]
+    A --> C[Download B12 SWIR 20m]
+    A --> D[Download SCL 20m]
+    
+    E[Post-Fire Sentinel-2 Scene] --> F[Download B08 NIR 10m]
+    E --> G[Download B12 SWIR 20m]
+    E --> H[Download SCL 20m]
+    
+    B --> I[Scale reflectance /10000]
+    C --> J[Scale reflectance /10000]
+    F --> K[Scale reflectance /10000]
+    G --> L[Scale reflectance /10000]
+    
+    J --> M[Resample SWIR 20m→10m]
+    L --> N[Resample SWIR 20m→10m]
+    
+    D --> O[Build Cloud Mask Pre]
+    H --> P[Build Cloud Mask Post]
+    
+    I --> Q[Apply Mask Pre]
+    M --> Q
+    O --> Q
+    
+    K --> R[Apply Mask Post]
+    N --> R
+    P --> R
+    
+    Q --> S[Calculate NBR_pre<br/>NIR-SWIR / NIR+SWIR]
+    R --> T[Calculate NBR_post<br/>NIR-SWIR / NIR+SWIR]
+    
+    S --> U[Calculate dNBR<br/>NBR_pre - NBR_post]
+    T --> U
+    
+    U --> V{Classify Severity}
+    V -->|< -0.10| W[Enhanced Regrowth]
+    V -->|-0.10 to 0.10| X[Unburned]
+    V -->|0.10 to 0.27| Y[Low Severity]
+    V -->|0.27 to 0.44| Z[Moderate-Low]
+    V -->|0.44 to 0.66| AA[Moderate-High]
+    V -->|> 0.66| AB[High Severity]
+    
+    W --> AC[Burn Severity Map]
+    X --> AC
+    Y --> AC
+    Z --> AC
+    AA --> AC
+    AB --> AC
+    
+    AC --> AD[Folium Overlay]
+    AD --> AE[Interactive HTML Map]
+    
+    style S fill:#fff3cd
+    style T fill:#fff3cd
+    style U fill:#ffe1e1
+    style AC fill:#ccffcc
+        </div>
+    </div>
+
+    <h2>5. Data Model Class Diagram</h2>
+    <div class="diagram-container">
+        <div class="mermaid">
+classDiagram
+    class SentinelStacConnector {
+        +String base_url
+        +Session session
+        +search(geometry, dates, cloud_cover)
+        +download_asset(href, destination)
+        +download_bands(item, bands, target_dir)
+        +export_search(items, path)
+    }
+    
+    class StacItem {
+        +String id
+        +Dict assets
+        +Dict geometry
+    }
+    
+    class RasterProduct {
+        +Path path
+        +ndarray array
+        +Affine transform
+        +String crs
+    }
+    
+    class NBRProducts {
+        +RasterProduct nir
+        +RasterProduct swir
+        +RasterProduct nbr
+    }
+    
+    class NBRRunResult {
+        +NBRProducts pre
+        +NBRProducts post
+        +RasterProduct dnbr
+        +RasterProduct severity
+    }
+    
+    class NBRPipeline {
+        +SentinelStacConnector connector
+        +download_and_prepare()
+        +compute_statistics()
+        +to_folium_map()
+        -load_raster()
+        -resample_to_match()
+        -compute_nbr()
+        -build_cloud_mask()
+    }
+    
+    class AreaOfInterest {
+        +BaseGeometry geometry
+        +bounds()
+        +to_geojson()
+    }
+    
+    SentinelStacConnector --> StacItem
+    NBRPipeline --> SentinelStacConnector
+    NBRPipeline --> RasterProduct
+    NBRPipeline --> NBRProducts
+    NBRPipeline --> NBRRunResult
+    NBRPipeline --> AreaOfInterest
+    NBRProducts --> RasterProduct
+    NBRRunResult --> NBRProducts
+    NBRRunResult --> RasterProduct
+        </div>
+    </div>
+
+    <h2>6. Error Handling & Cloud Masking Flow</h2>
+    <div class="diagram-container">
+        <div class="mermaid">
+flowchart TD
+    A[Start Pipeline] --> B{STAC Items Found?}
+    B -->|No| C[Raise RuntimeError:<br/>No items found]
+    B -->|Yes| D{Cloud Cover OK?}
+    
+    D -->|No| E[Log Warning:<br/>High cloud cover]
+    D -->|Yes| F[Download Bands]
+    
+    F --> G{Download Success?}
+    G -->|No| H[Retry Download]
+    G -->|Yes| I[Load Rasters]
+    
+    H --> J{Max Retries?}
+    J -->|Yes| K[Raise DownloadError]
+    J -->|No| F
+    
+    I --> L{SCL Available?}
+    L -->|Yes| M[Build Cloud Mask]
+    L -->|No| N[Skip Cloud Masking]
+    
+    M --> O[Apply Mask:<br/>Classes 8,9,10,11 → NaN]
+    
+    O --> P[Resample Bands]
+    N --> P
+    
+    P --> Q[Calculate NBR]
+    Q --> R[Calculate dNBR]
+    R --> S[Classify Severity]
+    S --> T[Return Result]
+    
+    C --> Z[Exit]
+    E --> Z
+    K --> Z
+    T --> AA[Success]
+    
+    style M fill:#d1ecf1
+    style O fill:#d1ecf1
+    style S fill:#d4edda
+        </div>
+    </div>
+
+    <h2>7. Burn Severity Classification</h2>
+    <div class="diagram-container">
+        <div class="mermaid">
+graph TD
+    A[dNBR Raster] --> B{Classification Logic}
+    
+    B -->|dNBR < -0.25| C[Enhanced Regrowth<br/>Class 0<br/>RGB: 26,152,80]
+    B -->|-0.25 to -0.10| D[High Regrowth<br/>Class 1<br/>RGB: 102,189,99]
+    B -->|-0.10 to 0.10| E[Unburned<br/>Class 2<br/>RGB: 255,255,190]
+    B -->|0.10 to 0.27| F[Low Severity<br/>Class 3<br/>RGB: 253,174,97]
+    B -->|0.27 to 0.66| G[Moderate Severity<br/>Class 4<br/>RGB: 244,109,67]
+    B -->|> 0.66| H[High Severity<br/>Class 5<br/>RGB: 215,48,39]
+    
+    C --> I[Severity Raster uint8]
+    D --> I
+    E --> I
+    F --> I
+    G --> I
+    H --> I
+    
+    I --> J[Apply Colormap]
+    J --> K[RGBA Image]
+    K --> L[Folium Overlay]
+    
+    style C fill:#1a9850
+    style D fill:#66bd63
+    style E fill:#ffffbf
+    style F fill:#fdae61
+    style G fill:#f46d43
+    style H fill:#d73027
+        </div>
+    </div>
+
+    <h2>8. Visualization Pipeline</h2>
+    <div class="diagram-container">
+        <div class="mermaid">
+flowchart LR
+    A[dNBR Array] --> B[Normalize to 0-1<br/>min=-1, max=1]
+    B --> C[Apply Colormap<br/>6-stop gradient]
+    C --> D[Generate RGBA<br/>with transparency]
+    
+    D --> E[Create Folium Map]
+    
+    F[AOI Bounds] --> E
+    G[Base Tiles<br/>OpenStreetMap] --> E
+    
+    E --> H[Add ImageOverlay<br/>opacity=0.65]
+    H --> I[Add LayerControl]
+    I --> J[Export HTML]
+    
+    J --> K[Interactive Map<br/>dnbr_overlay.html]
+    
+    style D fill:#fff3cd
+    style K fill:#d4edda
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: { 
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                useMaxWidth: true
+            }
+        });
+    </script>
+
+    <div class="info" style="margin-top: 50px; background: #d4edda; border-left-color: #28a745;">
+        <strong>✅ Complete:</strong> All architecture diagrams for the Dragonfly NBR/dNBR toolkit. 
+        This page works offline after initial load and diagrams can be exported via right-click.
+    </div>
+
+    <div class="info" style="background: #fff3cd; border-left-color: #ffc107;">
+        <strong>💡 Usage Tips:</strong>
+        <ul>
+            <li>Right-click any diagram → "Save image as..." to export as SVG/PNG</li>
+            <li>Use browser zoom (Ctrl +/-) to resize diagrams</li>
+            <li>Source .mmd files are in the diagrams/ folder for editing</li>
+            <li>Visit <a href="https://mermaid.live" target="_blank">mermaid.live</a> to edit diagrams online</li>
+        </ul>
+    </div>
+
+</body>
+</html>
