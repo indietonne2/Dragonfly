@@ -1,4 +1,10 @@
-"""High-level pipeline for Sentinel-2 NBR and dNBR overlays."""
+"""
+Author: Thomas Fischer (TFITConsult)
+Version: 2.0
+What this file does: High-level pipeline for Sentinel-2 NBR and dNBR overlays.
+Filename: pipeline.py
+Pathname: /workspace/Dragonfly/src/dragonfly/pipeline.py
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,7 +16,7 @@ import rasterio
 from rasterio.enums import Resampling
 
 from .data_access import SentinelStacConnector, StacItem
-from .processing import calculate_dnbr, calculate_nbr
+from .processing import calculate_dnbr, calculate_nbr, classify_dnbr
 from .viz import raster_overlay
 
 
@@ -34,6 +40,7 @@ class NBRRunResult:
     pre: NBRProducts
     post: NBRProducts
     dnbr: RasterProduct
+    severity: RasterProduct | None = None
 
 
 class NBRPipeline:
@@ -47,9 +54,6 @@ class NBRPipeline:
             array = dataset.read(1, out_dtype="float32")
             if scale_reflectance:
                 array = array / 10000.0
-    def _load_raster(self, path: Path) -> RasterProduct:
-        with rasterio.open(path) as dataset:
-            array = dataset.read(1, out_dtype="float32")
             return RasterProduct(
                 path=path,
                 array=array,
@@ -111,8 +115,6 @@ class NBRPipeline:
         bands: Iterable[str] = ("B08", "B12", "SCL"),
         apply_cloud_mask: bool = True,
         cloudy_classes: Iterable[int] = (8, 9, 10, 11),
-        cloud_cover: int = 20,
-        bands: Iterable[str] = ("B08", "B12"),
     ) -> NBRRunResult:
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -144,11 +146,40 @@ class NBRPipeline:
         dnbr_array = calculate_dnbr(pre_nbr.array, post_nbr.array)
         dnbr = RasterProduct(path=target_dir / "dnbr.tif", array=dnbr_array, transform=pre_nbr.transform, crs=pre_nbr.crs)
 
+        severity_array = classify_dnbr(dnbr_array)
+        severity = RasterProduct(
+            path=target_dir / "severity.tif",
+            array=severity_array,
+            transform=pre_nbr.transform,
+            crs=pre_nbr.crs,
+        )
+
         return NBRRunResult(
             pre=NBRProducts(nir=pre_nir, swir=pre_swir, nbr=pre_nbr),
             post=NBRProducts(nir=post_nir, swir=post_swir, nbr=post_nbr),
             dnbr=dnbr,
+            severity=severity,
         )
+
+    def compute_statistics(self, result: NBRRunResult) -> dict[str, float]:
+        """Compute burn area statistics from a dNBR result."""
+
+        dnbr = result.dnbr.array
+        valid_dnbr = dnbr[~np.isnan(dnbr)]
+
+        total_pixels = valid_dnbr.size
+        burned_pixels = np.sum(valid_dnbr > 0.10)
+        high_severity = np.sum(valid_dnbr > 0.66)
+
+        pixel_area_km2 = 100 / 1e6  # 10m resolution -> 100 m^2 per pixel
+
+        return {
+            "total_area_km2": total_pixels * pixel_area_km2,
+            "burned_area_km2": burned_pixels * pixel_area_km2,
+            "burned_percentage": 100 * burned_pixels / total_pixels if total_pixels > 0 else 0.0,
+            "high_severity_km2": high_severity * pixel_area_km2,
+            "high_severity_percentage": 100 * high_severity / total_pixels if total_pixels > 0 else 0.0,
+        }
 
     def to_folium_map(self, dnbr: RasterProduct, bounds: tuple[float, float, float, float]):
         """Create a folium map ready for OpenStreetMap overlay."""
