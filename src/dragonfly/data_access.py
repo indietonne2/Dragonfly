@@ -1,4 +1,10 @@
-"""Sentinel-2 STAC connector for retrieving NBR-ready bands."""
+"""
+Author: Thomas Fischer (TFITConsult)
+Version: 2.0
+What this file does: Sentinel-2 STAC connector for retrieving NBR-ready bands.
+Filename: data_access.py
+Pathname: /workspace/Dragonfly/src/dragonfly/data_access.py
+"""
 from __future__ import annotations
 
 import json
@@ -34,7 +40,6 @@ class SentinelStacConnector:
         end: str,
         collections: Iterable[str] = ("sentinel-2-l2a",),
         cloud_cover: int = 5,
-        cloud_cover: int = 20,
         limit: int = 10,
     ) -> list[StacItem]:
         """Search STAC for Sentinel-2 items covering the AOI and date range."""
