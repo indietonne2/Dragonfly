@@ -34,6 +34,7 @@ class SentinelStacConnector:
         end: str,
         collections: Iterable[str] = ("sentinel-2-l2a",),
         cloud_cover: int = 5,
+        cloud_cover: int = 20,
         limit: int = 10,
     ) -> list[StacItem]:
         """Search STAC for Sentinel-2 items covering the AOI and date range."""

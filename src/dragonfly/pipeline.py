@@ -47,6 +47,9 @@ class NBRPipeline:
             array = dataset.read(1, out_dtype="float32")
             if scale_reflectance:
                 array = array / 10000.0
+    def _load_raster(self, path: Path) -> RasterProduct:
+        with rasterio.open(path) as dataset:
+            array = dataset.read(1, out_dtype="float32")
             return RasterProduct(
                 path=path,
                 array=array,
@@ -108,6 +111,8 @@ class NBRPipeline:
         bands: Iterable[str] = ("B08", "B12", "SCL"),
         apply_cloud_mask: bool = True,
         cloudy_classes: Iterable[int] = (8, 9, 10, 11),
+        cloud_cover: int = 20,
+        bands: Iterable[str] = ("B08", "B12"),
     ) -> NBRRunResult:
         target_dir.mkdir(parents=True, exist_ok=True)
 

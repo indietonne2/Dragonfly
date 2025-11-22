@@ -34,3 +34,5 @@ This repository now includes a lightweight Python engine for accessing Sentinel-
 - The pipeline expects Sentinel-2 L2A assets that expose `B08` (NIR), `B12` (SWIR), and `SCL` (scene classification) assets as GeoTIFFs.
 - Raster reprojection and resampling are handled automatically when band resolutions differ.
 - Reflectance bands are scaled to [0,1] from Sentinel's stored 0..10,000 range and clouds/snow (SCL classes 8, 9, 10, 11) are masked by default.
+- The pipeline expects Sentinel-2 L2A assets that expose `B08` (NIR) and `B12` (SWIR) assets as GeoTIFFs.
+- Raster reprojection and resampling are handled automatically when band resolutions differ.
