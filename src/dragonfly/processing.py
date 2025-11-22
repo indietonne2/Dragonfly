@@ -1,4 +1,10 @@
-"""Spectral index processing utilities for Sentinel-2 NBR/dNBR workflows."""
+"""
+Author: Thomas Fischer (TFITConsult)
+Version: 2.0
+What this file does: Spectral index processing utilities for Sentinel-2 NBR/dNBR workflows.
+Filename: processing.py
+Pathname: /workspace/Dragonfly/src/dragonfly/processing.py
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass

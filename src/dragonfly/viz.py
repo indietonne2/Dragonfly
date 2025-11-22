@@ -1,4 +1,10 @@
-"""Visualization helpers for folium / OpenStreetMap overlays."""
+"""
+Author: Thomas Fischer (TFITConsult)
+Version: 2.0
+What this file does: Visualization helpers for folium / OpenStreetMap overlays.
+Filename: viz.py
+Pathname: /workspace/Dragonfly/src/dragonfly/viz.py
+"""
 from __future__ import annotations
 
 from typing import Iterable
