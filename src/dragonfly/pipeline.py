@@ -42,6 +42,11 @@ class NBRPipeline:
     def __init__(self, connector: SentinelStacConnector | None = None) -> None:
         self.connector = connector or SentinelStacConnector()
 
+    def _load_raster(self, path: Path, *, scale_reflectance: bool = True) -> RasterProduct:
+        with rasterio.open(path) as dataset:
+            array = dataset.read(1, out_dtype="float32")
+            if scale_reflectance:
+                array = array / 10000.0
     def _load_raster(self, path: Path) -> RasterProduct:
         with rasterio.open(path) as dataset:
             array = dataset.read(1, out_dtype="float32")
@@ -86,12 +91,26 @@ class NBRPipeline:
             raise RuntimeError("No Sentinel-2 items found for requested window and AOI")
         return items[0]
 
+    def _build_cloud_mask(
+        self,
+        scl: RasterProduct,
+        target: RasterProduct,
+        cloudy_classes: Iterable[int] = (8, 9, 10, 11),
+    ) -> np.ndarray:
+        if scl.array.shape != target.array.shape:
+            scl = self._resample_to_match(scl, target)
+        return np.isin(scl.array, cloudy_classes)
+
     def download_and_prepare(
         self,
         geometry: dict,
         pre_window: tuple[str, str],
         post_window: tuple[str, str],
         target_dir: Path,
+        cloud_cover: int = 5,
+        bands: Iterable[str] = ("B08", "B12", "SCL"),
+        apply_cloud_mask: bool = True,
+        cloudy_classes: Iterable[int] = (8, 9, 10, 11),
         cloud_cover: int = 20,
         bands: Iterable[str] = ("B08", "B12"),
     ) -> NBRRunResult:
@@ -107,6 +126,18 @@ class NBRPipeline:
         pre_swir = self._load_raster(pre_paths["B12"])
         post_nir = self._load_raster(post_paths["B08"])
         post_swir = self._load_raster(post_paths["B12"])
+
+        if apply_cloud_mask and "SCL" in pre_paths and "SCL" in post_paths:
+            pre_scl = self._load_raster(pre_paths["SCL"], scale_reflectance=False)
+            post_scl = self._load_raster(post_paths["SCL"], scale_reflectance=False)
+
+            pre_mask = self._build_cloud_mask(pre_scl, pre_nir, cloudy_classes)
+            post_mask = self._build_cloud_mask(post_scl, post_nir, cloudy_classes)
+
+            pre_nir.array[pre_mask] = np.nan
+            pre_swir.array[pre_mask] = np.nan
+            post_nir.array[post_mask] = np.nan
+            post_swir.array[post_mask] = np.nan
 
         pre_nbr = self._compute_nbr(pre_nir, pre_swir)
         post_nbr = self._compute_nbr(post_nir, post_swir)

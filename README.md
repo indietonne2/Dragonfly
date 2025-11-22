@@ -8,6 +8,7 @@ This repository now includes a lightweight Python engine for accessing Sentinel-
 - AOI helpers for GeoJSON or bounding boxes
 - Folium overlay generation for OpenStreetMap (or any Leaflet tile server)
 - Example pipeline demonstrating end-to-end use
+- Cloud masking that downloads the Sentinel-2 Scene Classification Layer (SCL) and masks clouds/snow
 
 ## Quickstart
 1. Install the library in editable mode:
@@ -30,5 +31,8 @@ This repository now includes a lightweight Python engine for accessing Sentinel-
 
 ## Notes
 - The STAC endpoint defaults to Copernicus Data Space; override `base_url` if you have a different catalogue.
+- The pipeline expects Sentinel-2 L2A assets that expose `B08` (NIR), `B12` (SWIR), and `SCL` (scene classification) assets as GeoTIFFs.
+- Raster reprojection and resampling are handled automatically when band resolutions differ.
+- Reflectance bands are scaled to [0,1] from Sentinel's stored 0..10,000 range and clouds/snow (SCL classes 8, 9, 10, 11) are masked by default.
 - The pipeline expects Sentinel-2 L2A assets that expose `B08` (NIR) and `B12` (SWIR) assets as GeoTIFFs.
 - Raster reprojection and resampling are handled automatically when band resolutions differ.
