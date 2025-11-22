@@ -1,0 +1,22 @@
+flowchart TD
+    A[Sentinel-2 L2A Product] --> B[List All Bands]
+    B --> C{Resolution Filter}
+    C -->|10m| D[B02, B03, B04, B08]
+    C -->|20m| E[B05, B06, B07, B8A, B11, B12]
+    C -->|60m| F[B01, B09, B10]
+    
+    E --> G[Select RGB Bands]
+    G --> H[B04_20m - Red]
+    G --> I[B03_20m - Green]
+    G --> J[B02_20m - Blue]
+    
+    H --> K[Download from S3]
+    I --> K
+    J --> K
+    
+    K --> L[Rasterio Read]
+    L --> M[Convert uint16 to float64]
+    M --> N[Divide by 10000]
+    N --> O[Reflectance Range: 0.0-1.0]
+    
+    O --> P[Stack to 3D Array<br/>shape: height, width, 3]

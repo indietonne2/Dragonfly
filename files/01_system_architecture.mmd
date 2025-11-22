@@ -1,0 +1,45 @@
+graph TB
+    subgraph "User Environment"
+        A[Jupyter Notebook] 
+        B[Python Environment<br/>tilebox, xarray, rasterio]
+    end
+    
+    subgraph "Tilebox Platform"
+        C[Tilebox API Client]
+        D[Metadata Catalog<br/>open_data.copernicus.sentinel2_msi]
+        E[Query Engine]
+    end
+    
+    subgraph "Copernicus Infrastructure"
+        F[Copernicus Data Space]
+        G[S3 Storage<br/>eodata bucket]
+        H[Sentinel-2 L2A Products]
+    end
+    
+    subgraph "Processing Pipeline"
+        I[Filter by Cloud Cover]
+        J[Download Manager]
+        K[Rasterio Band Reader]
+        L[NumPy Array Processing]
+        M[Change Detection Algorithm]
+        N[Visualization Engine]
+    end
+    
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> I
+    I --> J
+    J --> F
+    F --> G
+    G --> H
+    H --> K
+    K --> L
+    L --> M
+    M --> N
+    N --> A
+    
+    style A fill:#e1f5ff
+    style M fill:#ffe1e1
+    style H fill:#e1ffe1

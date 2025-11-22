@@ -1,0 +1,18 @@
+graph TD
+    A[Bounding Box Query] --> B{Intersection Mode}
+    B -->|Intersects| C[Return all tiles<br/>touching bbox]
+    B -->|Contains| D[Return only tiles<br/>fully inside bbox]
+    B -->|Within| E[Return tiles<br/>containing bbox]
+    
+    C --> F[Spatial Filter Applied]
+    D --> F
+    E --> F
+    
+    F --> G{Temporal Filter}
+    G -->|Pre-fire| H[2021-06-01 to 2021-07-01]
+    G -->|Post-fire| I[2022-06-01 to 2022-07-01]
+    
+    H --> J[Cloud Cover Filter <= 1%]
+    I --> J
+    
+    J --> K[Final Granule Selection]

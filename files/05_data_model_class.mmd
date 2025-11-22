@@ -1,0 +1,57 @@
+classDiagram
+    class TileboxClient {
+        +String token
+        +dataset(name: str)
+        +query()
+    }
+    
+    class Dataset {
+        +String name
+        +collection(name: str)
+        +query(temporal, spatial)
+    }
+    
+    class Collection {
+        +String collection_id
+        +query(filters)
+        +XArray results
+    }
+    
+    class XArrayDataset {
+        +DataArray time
+        +DataArray cloud_cover
+        +DataArray geometry
+        +isel()
+        +sizes
+    }
+    
+    class CopernicusClient {
+        +String access_key
+        +String secret_key
+        +list_objects()
+        +download_objects()
+        +quicklook()
+    }
+    
+    class RasterBand {
+        +String filepath
+        +int width
+        +int height
+        +ndarray data
+        +CRS crs
+        +read()
+    }
+    
+    class ChangeDetector {
+        +ndarray before_rgb
+        +ndarray after_rgb
+        +compute_change()
+        +ndarray change_map
+    }
+    
+    TileboxClient --> Dataset
+    Dataset --> Collection
+    Collection --> XArrayDataset
+    XArrayDataset --> CopernicusClient
+    CopernicusClient --> RasterBand
+    RasterBand --> ChangeDetector

@@ -1,0 +1,25 @@
+stateDiagram-v2
+    [*] --> QueryMetadata
+    QueryMetadata --> CloudFilter: Granules found
+    QueryMetadata --> [*]: No data found
+    
+    CloudFilter --> SelectProduct: Filtered granules
+    CloudFilter --> [*]: All cloudy
+    
+    SelectProduct --> DownloadBands: Product selected
+    
+    DownloadBands --> ReadRaster: Files downloaded
+    DownloadBands --> Error: Download failed
+    
+    ReadRaster --> NormalizeReflectance: Arrays loaded
+    ReadRaster --> Error: Read failed
+    
+    NormalizeReflectance --> CreateComposite: Scaled to [0,1]
+    
+    CreateComposite --> CalculateChange: Before + After ready
+    
+    CalculateChange --> Visualize: Change map computed
+    
+    Visualize --> [*]: Complete
+    
+    Error --> [*]: Abort

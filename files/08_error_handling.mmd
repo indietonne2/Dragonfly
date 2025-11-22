@@ -1,0 +1,27 @@
+flowchart TD
+    A[Start Process] --> B{API Key Valid?}
+    B -->|No| C[Raise AuthenticationError]
+    B -->|Yes| D{Granules Found?}
+    
+    D -->|No| E[Log: No data available]
+    D -->|Yes| F{Cloud Filter Pass?}
+    
+    F -->|No| G[Warning: High cloud cover]
+    F -->|Yes| H{Download Success?}
+    
+    H -->|No| I[Retry with exponential backoff]
+    H -->|Yes| J{Files Readable?}
+    
+    I --> K{Max Retries?}
+    K -->|Yes| L[Raise DownloadError]
+    K -->|No| H
+    
+    J -->|No| M[Raise RasterIOError]
+    J -->|Yes| N[Process Successfully]
+    
+    C --> Z[Exit]
+    E --> Z
+    G --> Z
+    L --> Z
+    M --> Z
+    N --> O[Return Results]
